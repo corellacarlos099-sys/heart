@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✨ Para Ti ✨</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Great+Vibes&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ══════════════════════════════════════════════
+           RESET & BASE
+           ══════════════════════════════════════════════ */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: default;
+        }
+
+        body {
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+            font-family: 'Dancing Script', cursive;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ══════════════════════════════════════════════
+           CANVAS — STAR FIELD
+           ══════════════════════════════════════════════ */
+        #starCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* ══════════════════════════════════════════════
+           CONSTELLATION CANVAS
+           ══════════════════════════════════════════════ */
+        #constellationCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* ══════════════════════════════════════════════
+           CURSOR PARTICLES CANVAS
+           ══════════════════════════════════════════════ */
+        #particleCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        /* ══════════════════════════════════════════════
+           SHOOTING STAR
+           ══════════════════════════════════════════════ */
+        .shooting-star {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow:
+                0 0 6px 2px rgba(255, 255, 255, 0.9),
+                0 0 12px 4px rgba(105, 155, 255, 0.6),
+                0 0 20px 8px rgba(105, 155, 255, 0.3);
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .shooting-star.active {
+            animation: shootingStar 1.2s ease-in forwards;
+        }
+
+        .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 100%;
+            transform: translateY(-50%);
+            width: 120px;
+            height: 2px;
+            background: linear-gradient(to left, rgba(255, 255, 255, 0.8), transparent);
+            border-radius: 50%;
+        }
+
+        @keyframes shootingStar {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0) rotate(-35deg);
+            }
+
+            70% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-600px, 350px) rotate(-35deg);
+            }
+        }
+
+        /* ══════════════════════════════════════════════
+           TYPEWRITER MESSAGE (inside heart)
+           ══════════════════════════════════════════════ */
+        .typewriter-container {
+            position: fixed;
+            z-index: 3;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            max-width: 340px;
+            padding: 1rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        .typewriter-container.visible {
+            opacity: 1;
+        }
+
+        .typewriter-text {
+            font-family: 'Great Vibes', cursive;
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow:
+                0 0 10px rgba(255, 180, 220, 0.6),
+                0 0 25px rgba(255, 150, 200, 0.3),
+                0 0 40px rgba(200, 150, 255, 0.15);
+        }
+
+        .typewriter-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background: rgba(255, 200, 220, 0.9);
+            margin-left: 3px;
+            vertical-align: text-bottom;
+            animation: blink 0.7s step-end infinite;
+        }
+
+        .typewriter-cursor.hidden {
+            display: none;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* ══════════════════════════════════════════════
+           INITIAL PROMPT
+           ══════════════════════════════════════════════ */
+        .click-prompt {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.6);
+            animation: pulse 2s ease-in-out infinite;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .click-prompt.hidden {
+            opacity: 0;
+            transition: opacity 1s ease;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        /* ══════════════════════════════════════════════
+           AMBIENT GLOW
+           ══════════════════════════════════════════════ */
+        .ambient-glow {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(100, 100, 200, 0.08) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: ambientPulse 6s ease-in-out infinite;
+        }
+
+        @keyframes ambientPulse {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        /* ══════════════════════════════════════════════
+           MUSIC TOGGLE BUTTON
+           ══════════════════════════════════════════════ */
+        .music-btn {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.4rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+        }
+
+        .music-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 20px rgba(255, 180, 220, 0.3);
+        }
+
+        .music-btn.playing {
+            color: #ffc8dd;
+            box-shadow: 0 0 15px rgba(255, 180, 220, 0.4);
+            animation: musicPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes musicPulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(255, 180, 220, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(255, 180, 220, 0.5);
+            }
+        }
+
+        /* ══════════════════════════════════════════════
+           STAR RAIN CANVAS
+           ══════════════════════════════════════════════ */
+        #starRainCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Star field background -->
+    <canvas id="starCanvas"></canvas>
+
+    <!-- Heart constellation -->
+    <canvas id="constellationCanvas"></canvas>
+
+    <!-- Cursor particles -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Ambient glow -->
+    <div class="ambient-glow"></div>
+
+    <!-- Shooting star element -->
+    <div class="shooting-star" id="shootingStar"></div>
+
+    <!-- Star rain canvas (for finale) -->
+    <canvas id="starRainCanvas"></canvas>
+
+    <!-- Background music — Interstellar Main Theme (Cornfield Chase) -->
+    <audio id="bgMusic" loop preload="auto">
+        <source
+            src="https://files.freemusicarchive.org/storage-freemusicarchive-org/tracks/MvODNJGQwqPFLwVdEqko1bIoxTbVdijr5OcSzBav.mp3"
+            type="audio/mpeg">
+    </audio>
+
+    <!-- Music toggle button -->
+    <button class="music-btn" id="musicBtn" title="Música 🎵">🔇</button>
+
+    <!-- Typewriter message inside heart -->
+    <div class="typewriter-container" id="typewriterContainer">
+        <span class="typewriter-text" id="typewriterText"></span><span class="typewriter-cursor"
+            id="typewriterCursor"></span>
+    </div>
+
+    <!-- Click/tap prompt -->
+    <div class="click-prompt" id="clickPrompt">✨ Toca el cielo para descubrir tu sorpresa ✨</div>
+
+    <script>
+        /* ══════════════════════════════════════════════
+           CONFIGURATION
+           ══════════════════════════════════════════════ */
+        const CONFIG = {
+            stars: {
+                count: 350,
+                maxSize: 2.5,
+                minSize: 0.3,
+                twinkleSpeed: 0.02
+            },
+            constellation: {
+                starSize: 3.5,
+                lineWidth: 1.2,
+                glowColor: 'rgba(255, 180, 220, ',
+                drawSpeed: 40 // ms between each connection
+            },
+            shootingStar: {
+                interval: 8000 // ms between shooting stars
+            }
+        };
+
+        /* ══════════════════════════════════════════════
+           STAR FIELD (Background Canvas)
+           ══════════════════════════════════════════════ */
+        const starCanvas = document.getElementById('starCanvas');
+        const starCtx = starCanvas.getContext('2d');
+        let stars = [];
+
+        function resizeCanvas(canvas) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < CONFIG.stars.count; i++) {
+                stars.push({
+                    x: Math.random() * starCanvas.width,
+                    y: Math.random() * starCanvas.height,
+                    size: Math.random() * (CONFIG.stars.maxSize - CONFIG.stars.minSize) + CONFIG.stars.minSize,
+                    opacity: Math.random(),
+                    opacityDirection: Math.random() > 0.5 ? 1 : -1,
+                    speed: Math.random() * CONFIG.stars.twinkleSpeed + 0.005
+                });
+            }
+        }
+
+        function drawStars() {
+            starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+
+            for (const star of stars) {
+                // Twinkle effect
+                star.opacity += star.speed * star.opacityDirection;
+                if (star.opacity >= 1) {
+                    star.opacity = 1;
+                    star.opacityDirection = -1;
+                } else if (star.opacity <= 0.2) {
+                    star.opacity = 0.2;
+                    star.opacityDirection = 1;
+                }
+
+                starCtx.beginPath();
+                starCtx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                starCtx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                starCtx.fill();
+
+                // Subtle glow on brighter stars
+                if (star.size > 1.5) {
+                    starCtx.beginPath();
+                    starCtx.arc(star.x, star.y, star.size * 3, 0, Math.PI * 2);
+                    starCtx.fillStyle = `rgba(180, 200, 255, ${star.opacity * 0.1})`;
+                    starCtx.fill();
+                }
+            }
+
+            requestAnimationFrame(drawStars);
+        }
+
+        /* ══════════════════════════════════════════════
+           HEART CONSTELLATION
+           ══════════════════════════════════════════════ */
+        const constCanvas = document.getElementById('constellationCanvas');
+        const constCtx = constCanvas.getContext('2d');
+
+        // Heart shape using parametric equations
+        function generateHeartPoints(cx, cy, scale, count) {
+            const points = [];
+            for (let i = 0; i < count; i++) {
+                const t = (i / count) * Math.PI * 2;
+                // Parametric heart curve
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+                points.push({
+                    x: cx + x * scale,
+                    y: cy + y * scale,
+                    size: CONFIG.constellation.starSize,
+                    opacity: 0,
+                    glowSize: 0,
+                    revealed: false
+                });
+            }
+            return points;
+        }
+
+        let heartPoints = [];
+        let constellationLines = [];
+        let constellationAnimating = false;
+        let constellationComplete = false;
+
+        function initConstellation() {
+            const cx = constCanvas.width / 2;
+            const cy = constCanvas.height / 2 - 30;
+            const scale = Math.min(constCanvas.width, constCanvas.height) * 0.017;
+            heartPoints = generateHeartPoints(cx, cy, scale, 28);
+        }
+
+        function animateConstellation() {
+            if (constellationAnimating) return;
+            constellationAnimating = true;
+
+            let index = 0;
+
+            function revealNext() {
+                if (index >= heartPoints.length) {
+                    constellationComplete = true;
+                    // After constellation is complete, show message
+                    setTimeout(showMessage, 800);
+                    return;
+                }
+
+                heartPoints[index].revealed = true;
+
+                // Add connection line to next point
+                if (index > 0) {
+                    constellationLines.push({
+                        from: index - 1,
+                        to: index,
+                        opacity: 0
+                    });
+                }
+                // Close the heart shape
+                if (index === heartPoints.length - 1) {
+                    constellationLines.push({
+                        from: index,
+                        to: 0,
+                        opacity: 0
+                    });
+                }
+
+                index++;
+                setTimeout(revealNext, CONFIG.constellation.drawSpeed);
+            }
+
+            revealNext();
+        }
+
+        function drawConstellation() {
+            constCtx.clearRect(0, 0, constCanvas.width, constCanvas.height);
+
+            // Draw connecting lines
+            for (const line of constellationLines) {
+                if (line.opacity < 0.6) line.opacity += 0.02;
+                const from = heartPoints[line.from];
+                const to = heartPoints[line.to];
+
+                constCtx.beginPath();
+                constCtx.moveTo(from.x, from.y);
+                constCtx.lineTo(to.x, to.y);
+                constCtx.strokeStyle = CONFIG.constellation.glowColor + line.opacity + ')';
+                constCtx.lineWidth = CONFIG.constellation.lineWidth;
+                constCtx.stroke();
+
+                // Glow on lines
+                constCtx.beginPath();
+                constCtx.moveTo(from.x, from.y);
+                constCtx.lineTo(to.x, to.y);
+                constCtx.strokeStyle = CONFIG.constellation.glowColor + (line.opacity * 0.3) + ')';
+                constCtx.lineWidth = CONFIG.constellation.lineWidth * 3;
+                constCtx.stroke();
+            }
+
+            // Draw constellation stars
+            for (const point of heartPoints) {
+                if (!point.revealed) continue;
+
+                if (point.opacity < 1) point.opacity += 0.05;
+                if (point.glowSize < point.size * 4) point.glowSize += 0.5;
+
+                // Outer glow
+                const gradient = constCtx.createRadialGradient(
+                    point.x, point.y, 0,
+                    point.x, point.y, point.glowSize
+                );
+                gradient.addColorStop(0, `rgba(255, 200, 230, ${point.opacity * 0.8})`);
+                gradient.addColorStop(0.5, `rgba(255, 150, 200, ${point.opacity * 0.3})`);
+                gradient.addColorStop(1, 'rgba(255, 150, 200, 0)');
+
+                constCtx.beginPath();
+                constCtx.arc(point.x, point.y, point.glowSize, 0, Math.PI * 2);
+                constCtx.fillStyle = gradient;
+                constCtx.fill();
+
+                // Star core
+                constCtx.beginPath();
+                constCtx.arc(point.x, point.y, point.size, 0, Math.PI * 2);
+                constCtx.fillStyle = `rgba(255, 240, 245, ${point.opacity})`;
+                constCtx.fill();
+            }
+
+            // Subtle pulsing glow when complete
+            if (constellationComplete) {
+                const pulseOpacity = 0.05 + Math.sin(Date.now() * 0.002) * 0.03;
+                for (const point of heartPoints) {
+                    constCtx.beginPath();
+                    constCtx.arc(point.x, point.y, point.size * 6, 0, Math.PI * 2);
+                    constCtx.fillStyle = `rgba(255, 180, 220, ${pulseOpacity})`;
+                    constCtx.fill();
+                }
+            }
+
+            requestAnimationFrame(drawConstellation);
+        }
+
+        /* ══════════════════════════════════════════════
+           CURSOR PARTICLES
+           ══════════════════════════════════════════════ */
+        const particleCanvas = document.getElementById('particleCanvas');
+        const particleCtx = particleCanvas.getContext('2d');
+        let particles = [];
+        let mouseX = 0;
+        let mouseY = 0;
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.speedY = (Math.random() - 0.5) * 2 - 1;
+                this.opacity = 1;
+                this.decay = Math.random() * 0.02 + 0.015;
+                this.color = [
+                    '255, 200, 220',
+                    '200, 180, 255',
+                    '255, 255, 200',
+                    '180, 220, 255'
+                ][Math.floor(Math.random() * 4)];
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.opacity -= this.decay;
+                this.size *= 0.98;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+                ctx.fill();
+
+                // Tiny glow
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.opacity * 0.2})`;
+                ctx.fill();
+            }
+        }
+
+        function animateParticles() {
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw(particleCtx);
+                if (particles[i].opacity <= 0 || particles[i].size <= 0.1) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animateParticles);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            // Add a few particles on mouse move
+            for (let i = 0; i < 2; i++) {
+                particles.push(new Particle(mouseX, mouseY));
+            }
+            // Limit particle count
+            if (particles.length > 150) {
+                particles.splice(0, particles.length - 150);
+            }
+        });
+
+        // Touch support
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+            for (let i = 0; i < 2; i++) {
+                particles.push(new Particle(mouseX, mouseY));
+            }
+            if (particles.length > 150) {
+                particles.splice(0, particles.length - 150);
+            }
+        }, { passive: true });
+
+        /* ══════════════════════════════════════════════
+           SHOOTING STAR
+           ══════════════════════════════════════════════ */
+        const shootingStarEl = document.getElementById('shootingStar');
+
+        function triggerShootingStar() {
+            // Random position on top-right area
+            const startX = Math.random() * (window.innerWidth * 0.6) + window.innerWidth * 0.3;
+            const startY = Math.random() * (window.innerHeight * 0.3);
+
+            shootingStarEl.style.left = startX + 'px';
+            shootingStarEl.style.top = startY + 'px';
+            shootingStarEl.classList.remove('active');
+
+            // Force reflow
+            void shootingStarEl.offsetWidth;
+
+            shootingStarEl.classList.add('active');
+
+            // Remove class after animation
+            setTimeout(() => {
+                shootingStarEl.classList.remove('active');
+            }, 1200);
+        }
+
+        /* ══════════════════════════════════════════════
+           TYPEWRITER EFFECT
+           ══════════════════════════════════════════════ */
+        const ROMANTIC_PHRASE = 'Eres mi estrella favorita en un cielo infinito… y mi único deseo cada noche. 💫';
+        let typewriterIndex = 0;
+
+        function showMessage() {
+            const container = document.getElementById('typewriterContainer');
+            const textEl = document.getElementById('typewriterText');
+            const cursorEl = document.getElementById('typewriterCursor');
+
+            container.classList.add('visible');
+
+            function typeLetter() {
+                if (typewriterIndex < ROMANTIC_PHRASE.length) {
+                    textEl.textContent += ROMANTIC_PHRASE.charAt(typewriterIndex);
+                    typewriterIndex++;
+                    // Variable speed: pause longer on punctuation
+                    const char = ROMANTIC_PHRASE.charAt(typewriterIndex - 1);
+                    let delay = 70;
+                    if (char === '…' || char === '.' || char === ',') delay = 300;
+                    else if (char === ' ') delay = 50;
+                    setTimeout(typeLetter, delay);
+                } else {
+                    // Typing done — trigger finale!
+                    setTimeout(() => {
+                        cursorEl.classList.add('hidden');
+                        startHeartbeat();
+                        triggerStarRain();
+                    }, 1000);
+                }
+            }
+
+            typeLetter();
+        }
+
+        /* ══════════════════════════════════════════════
+           MUSIC CONTROLLER
+           ══════════════════════════════════════════════ */
+        const bgMusic = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('musicBtn');
+        let musicPlaying = false;
+
+        bgMusic.volume = 0;
+
+        function fadeInMusic(duration = 3000) {
+            bgMusic.play().then(() => {
+                musicPlaying = true;
+                musicBtn.textContent = '🔊';
+                musicBtn.classList.add('playing');
+                let vol = 0;
+                const step = 0.4 / (duration / 50); // fade to 0.4 volume
+                const fadeInterval = setInterval(() => {
+                    vol += step;
+                    if (vol >= 0.4) {
+                        vol = 0.4;
+                        clearInterval(fadeInterval);
+                    }
+                    bgMusic.volume = vol;
+                }, 50);
+            }).catch(() => {
+                // Autoplay blocked — user will use button
+            });
+        }
+
+        musicBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (musicPlaying) {
+                bgMusic.pause();
+                musicPlaying = false;
+                musicBtn.textContent = '🔇';
+                musicBtn.classList.remove('playing');
+            } else {
+                bgMusic.volume = 0.4;
+                bgMusic.play();
+                musicPlaying = true;
+                musicBtn.textContent = '🔊';
+                musicBtn.classList.add('playing');
+            }
+        });
+
+        /* ══════════════════════════════════════════════
+           HEARTBEAT EFFECT
+           ══════════════════════════════════════════════ */
+        let heartbeatActive = false;
+        let heartbeatScale = 1;
+        let heartbeatPhase = 0;
+
+        function startHeartbeat() {
+            heartbeatActive = true;
+        }
+
+        // This modifies the constellation draw to add heartbeat scaling
+        function getHeartbeatScale() {
+            if (!heartbeatActive) return 1;
+            heartbeatPhase += 0.04;
+            // Double-beat pattern like a real heartbeat: thump-THUMP...pause
+            const cycle = heartbeatPhase % (Math.PI * 2);
+            if (cycle < 0.6) {
+                // First beat (smaller)
+                return 1 + Math.sin(cycle / 0.6 * Math.PI) * 0.04;
+            } else if (cycle > 0.8 && cycle < 1.6) {
+                // Second beat (bigger)
+                return 1 + Math.sin((cycle - 0.8) / 0.8 * Math.PI) * 0.07;
+            }
+            return 1; // Rest between beats
+        }
+
+        /* ══════════════════════════════════════════════
+           STAR RAIN FINALE
+           ══════════════════════════════════════════════ */
+        const starRainCanvas = document.getElementById('starRainCanvas');
+        const starRainCtx = starRainCanvas.getContext('2d');
+        let rainStars = [];
+        let starRainActive = false;
+
+        class RainStar {
+            constructor() {
+                this.reset();
+                // Start from random Y position above screen
+                this.y = -Math.random() * starRainCanvas.height;
+            }
+
+            reset() {
+                this.x = Math.random() * starRainCanvas.width;
+                this.y = -10;
+                this.size = Math.random() * 3 + 1;
+                this.speed = Math.random() * 3 + 1.5;
+                this.opacity = Math.random() * 0.7 + 0.3;
+                this.drift = (Math.random() - 0.5) * 0.5;
+                this.tailLength = Math.random() * 30 + 15;
+                this.color = [
+                    '255, 255, 255',
+                    '255, 220, 240',
+                    '220, 200, 255',
+                    '200, 230, 255',
+                    '255, 240, 200'
+                ][Math.floor(Math.random() * 5)];
+            }
+
+            update() {
+                this.y += this.speed;
+                this.x += this.drift;
+                // Fade out near bottom
+                if (this.y > starRainCanvas.height - 100) {
+                    this.opacity *= 0.97;
+                }
+                if (this.y > starRainCanvas.height + 10 || this.opacity < 0.01) {
+                    this.reset();
+                }
+            }
+
+            draw(ctx) {
+                // Tail (line going upward)
+                const gradient = ctx.createLinearGradient(
+                    this.x, this.y,
+                    this.x - this.drift * 5, this.y - this.tailLength
+                );
+                gradient.addColorStop(0, `rgba(${this.color}, ${this.opacity})`);
+                gradient.addColorStop(1, `rgba(${this.color}, 0)`);
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.drift * 5, this.y - this.tailLength);
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = this.size * 0.6;
+                ctx.stroke();
+
+                // Star head (bright dot)
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+                ctx.fill();
+
+                // Glow
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.opacity * 0.15})`;
+                ctx.fill();
+            }
+        }
+
+        function triggerStarRain() {
+            starRainActive = true;
+            // Create stars in waves for dramatic effect
+            let totalStars = 0;
+            const maxStars = 80;
+
+            function addWave() {
+                const waveSize = Math.min(15, maxStars - totalStars);
+                for (let i = 0; i < waveSize; i++) {
+                    rainStars.push(new RainStar());
+                }
+                totalStars += waveSize;
+                if (totalStars < maxStars) {
+                    setTimeout(addWave, 800);
+                }
+            }
+
+            addWave();
+        }
+
+        function animateStarRain() {
+            starRainCtx.clearRect(0, 0, starRainCanvas.width, starRainCanvas.height);
+
+            if (starRainActive) {
+                for (const star of rainStars) {
+                    star.update();
+                    star.draw(starRainCtx);
+                }
+            }
+
+            requestAnimationFrame(animateStarRain);
+        }
+
+        /* ══════════════════════════════════════════════
+           MAIN SEQUENCE
+           ══════════════════════════════════════════════ */
+        let started = false;
+
+        function startExperience() {
+            if (started) return;
+            started = true;
+
+            const prompt = document.getElementById('clickPrompt');
+            prompt.classList.add('hidden');
+
+            // Start music with fade-in
+            fadeInMusic(4000);
+
+            // Phase 1: First shooting star (1s)
+            setTimeout(() => {
+                triggerShootingStar();
+            }, 1000);
+
+            // Phase 2: Second shooting star (2.5s)
+            setTimeout(() => {
+                triggerShootingStar();
+            }, 2500);
+
+            // Phase 3: Begin constellation (3.5s)
+            setTimeout(() => {
+                animateConstellation();
+            }, 3500);
+
+            // Phase 4: Recurring shooting stars
+            setTimeout(() => {
+                setInterval(triggerShootingStar, CONFIG.shootingStar.interval);
+            }, 6000);
+        }
+
+        // Start on click/tap
+        document.addEventListener('click', startExperience);
+        document.addEventListener('touchstart', startExperience, { passive: true });
+
+        /* ══════════════════════════════════════════════
+           INITIALIZATION
+           ══════════════════════════════════════════════ */
+        function init() {
+            [starCanvas, constCanvas, particleCanvas].forEach(resizeCanvas);
+            initStars();
+            initConstellation();
+            drawStars();
+            drawConstellation();
+            animateParticles();
+        }
+
+        window.addEventListener('resize', () => {
+            [starCanvas, constCanvas, particleCanvas].forEach(resizeCanvas);
+            initStars();
+            initConstellation();
+            constellationLines = [];
+            // Reset constellation state on resize if not animating
+            if (!constellationAnimating) {
+                heartPoints.forEach(p => {
+                    p.revealed = false;
+                    p.opacity = 0;
+                    p.glowSize = 0;
+                });
+            }
+        });
+
+        // Start everything
+        init();
+    </script>
+</body>
+
+</html>
